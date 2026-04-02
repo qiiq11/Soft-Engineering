@@ -1,7 +1,9 @@
 from room import Room
 from player import Player
+from enemy import Enemy
 from command import (
-    LookCommand, MoveCommand, QuitCommand, HelpCommand
+    LookCommand, MoveCommand, QuitCommand, HelpCommand,
+    GetCommand, DropCommand, AttackCommand, StatusCommand
 )
 import sys
 
@@ -18,13 +20,21 @@ class GameEngine:
         # 初始化命令
         self._init_commands()
 
+        # 战斗状态
+        self.in_combat = False
+        self.combat_round = 0
+
     def _init_commands(self):
         """初始化所有可用命令"""
         self.commands = [
             LookCommand(),
             MoveCommand(),
             QuitCommand(),
-            HelpCommand()
+            HelpCommand(),
+            GetCommand(),
+            DropCommand(),
+            AttackCommand(),
+            StatusCommand()
         ]
 
     def start_game(self, player_name: str = "玩家"):
@@ -68,6 +78,17 @@ class GameEngine:
         room3.add_item("钥匙")
         room4.add_item("药水")
 
+        # 创建敌人
+        goblin = Enemy("哥布林", hp=50, attack_power=15, defense=8, loot=["金币", "短剑"])
+        orc = Enemy("兽人", hp=80, attack_power=20, defense=12, loot=["兽皮", "力量药水"])
+
+        # 添加敌人到房间
+        room2.add_enemy(goblin)
+        room4.add_enemy(orc)
+
+        # 设置安全房间
+        room1.is_safe = True
+
         self.current_room = room1
 
     def main_game_loop(self):
@@ -82,6 +103,18 @@ class GameEngine:
                 user_input = input("> ").strip()
 
                 if not user_input:
+                    continue
+
+                # 战斗房间特殊处理
+                if self.current_room.is_combat_room() and not self.in_combat:
+                    print(f"\n⚠️ 你遇到了 {self.current_room.enemy.name}！")
+                    self.in_combat = True
+                    self.combat_round = 0
+                    self.combat_enemy = self.current_room.enemy
+
+                # 在战斗中只能使用 attack 命令
+                if self.in_combat and command_name not in ['attack', 'status', 'quit']:
+                    print("战斗中只能使用 attack 命令！")
                     continue
 
                 # 解析命令
@@ -99,6 +132,12 @@ class GameEngine:
 
                 if not command_executed:
                     print(f"未知命令：{command_name}。输入 'help' 查看可用命令。")
+
+                # 检查战斗状态
+                if self.in_combat and not self.current_room.is_combat_room():
+                    print("战斗结束！")
+                    self.in_combat = False
+                    self.combat_round = 0
 
                 # 检查游戏是否应该结束
                 if not self.running:
