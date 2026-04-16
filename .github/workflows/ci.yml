@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -73,7 +73,7 @@ jobs:
           safety check --json > safety-report.json || true
 
       - name: 上传质量报告
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: code-quality-reports
           path: |
@@ -87,7 +87,7 @@ jobs:
     needs: code-quality
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 设置 Python 环境
         uses: actions/setup-python@v4
@@ -118,7 +118,7 @@ jobs:
           coverage report --fail-under=${{ env.COVERAGE_THRESHOLD }}
 
       - name: 上传测试报告
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-reports
           path: |
@@ -134,7 +134,7 @@ jobs:
           files: test-results.xml
 
       - name: 发布覆盖率报告
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         if: always()
         with:
           files: ./coverage.xml
@@ -148,7 +148,7 @@ jobs:
     needs: unit-tests
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 设置 Python 环境
         uses: actions/setup-python@v4
@@ -168,7 +168,7 @@ jobs:
             --self-contained-html
 
       - name: 上传集成测试报告
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-reports
           path: integration-test-report.html
@@ -180,7 +180,7 @@ jobs:
     needs: [unit-tests, integration-tests]
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 设置 Python 环境
         uses: actions/setup-python@v4
@@ -218,10 +218,10 @@ jobs:
 
     steps:
       - name: 检出代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 下载构建产物
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-packages
           path: dist/
