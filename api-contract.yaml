@@ -1,0 +1,872 @@
+# MUD Game API Contract
+openapi: 3.0.3
+info:
+  title: MUD Game API
+  description: 文字 MUD 游戏系统 RESTful API 接口契约
+  version: 2.0.0
+  contact:
+    name: 4399 Team
+    email: contact@mud-game.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.mud-game.com/v2
+    description: 生产环境服务器
+  - url: https://staging-api.mud-game.com/v2
+    description: 测试环境服务器
+  - url: http://localhost:8000/v2
+    description: 本地开发服务器
+
+# 安全方案
+security:
+  - BearerAuth: []
+
+paths:
+  # 玩家相关接口
+  /player:
+    get:
+      tags:
+        - Player
+      summary: 获取玩家信息
+      description: 获取当前玩家的详细信息，包括生命值、背包、位置等
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 玩家信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /player/status:
+    get:
+      tags:
+        - Player
+      summary: 获取玩家状态
+      description: 快速获取玩家当前状态（生命值、位置等）
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 玩家状态
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "张三"
+                  hp:
+                    type: integer
+                    format: int32
+                    example: 88
+                  max_hp:
+                    type: integer
+                    format: int32
+                    example: 100
+                  level:
+                    type: integer
+                    format: int32
+                    example: 1
+                  position:
+                    type: string
+                    example: "start_room"
+
+  # 房间相关接口
+  /room:
+    get:
+      tags:
+        - Room
+      summary: 获取当前房间信息
+      description: 获取玩家当前房间的详细信息，包括描述、物品、敌人等
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 房间信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /room/{roomId}:
+    get:
+      tags:
+        - Room
+      summary: 获取指定房间信息
+      description: 获取指定房间的详细信息（用于地图探索）
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: 房间ID
+          schema:
+            type: string
+            example: "start_room"
+      responses:
+        '200':
+          description: 房间信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # 移动相关接口
+  /movement:
+    post:
+      tags:
+        - Movement
+      summary: 移动到指定房间
+      description: 执行移动操作，向指定方向移动到相邻房间
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - direction
+              properties:
+                direction:
+                  type: string
+                  enum: [north, south, east, west, up, down]
+                  example: "north"
+                  description: 移动方向
+      responses:
+        '200':
+          description: 移动成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # 战斗相关接口
+  /combat/attack:
+    post:
+      tags:
+        - Combat
+      summary: 发起攻击
+      description: 攻击当前房间的敌人
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 攻击结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatResult'
+        '400':
+          description: 没有敌人或敌人已死亡
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /combat/status:
+    get:
+      tags:
+        - Combat
+      summary: 获取战斗状态
+      description: 查看当前战斗的详细信息
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 战斗状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CombatStatus'
+        '404':
+          description: 当前没有战斗
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No combat in progress"
+
+  # 物品相关接口
+  /item:
+    get:
+      tags:
+        - Item
+      summary: 获取物品列表
+      description: 获取房间内的物品列表
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 物品列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  message:
+                    type: string
+                    example: "找到以下物品"
+
+  /item/pickup:
+    post:
+      tags:
+        - Item
+      summary: 拾取物品
+      description: 从当前房间拾取指定的物品
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_name
+              properties:
+                item_name:
+                  type: string
+                  example: "火把"
+                  description: 物品名称
+      responses:
+        '200':
+          description: 拾取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "你拾取了火把"
+                  item:
+                    $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /item/drop:
+    post:
+      tags:
+        - Item
+      summary: 丢弃物品
+      description: 将物品从背包中丢弃到当前房间
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_name
+              properties:
+                item_name:
+                  type: string
+                  example: "药水"
+                  description: 物品名称
+      responses:
+        '200':
+          description: 丢弃成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "你丢弃了药水"
+                  item:
+                    $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # 背包相关接口
+  /inventory:
+    get:
+      tags:
+        - Inventory
+      summary: 获取背包内容
+      description: 获取玩家背包中的所有物品
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 背包内容
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inventory:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  capacity:
+                    type: integer
+                    example: 10
+                  total_weight:
+                    type: number
+                    format: float
+                    example: 2.5
+
+  # 游戏控制接口
+  /game/start:
+    post:
+      tags:
+        - Game
+      summary: 开始新游戏
+      description: 开始一个新的游戏会话
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                player_name:
+                  type: string
+                  example: "冒险者"
+                  description: 玩家名称
+      responses:
+        '200':
+          description: 游戏开始
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game_id:
+                    type: string
+                    example: "game_123456"
+                  message:
+                    type: string
+                    example: "欢迎来到文字 MUD 游戏！"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /game/quit:
+    post:
+      tags:
+        - Game
+      summary: 退出游戏
+      description: 退出当前游戏并保存状态（如果配置）
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 游戏退出
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "感谢游玩！再见！"
+                  final_score:
+                    type: integer
+                    example: 100
+
+  # 命令帮助接口
+  /help:
+    get:
+      tags:
+        - Game
+      summary: 获取帮助信息
+      description: 获取所有可用命令的帮助信息
+      responses:
+        '200':
+          description: 命令帮助信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commands:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Command'
+                  message:
+                    type: string
+                    example: "=== 可用命令 ==="
+
+components:
+  # 安全方案
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token 认证
+
+  # 响应组件
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UnauthorizedError:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: 资源未找到
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # 数据模型
+  schemas:
+    Player:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "player_123"
+        name:
+          type: string
+          example: "张三"
+        hp:
+          type: integer
+          format: int32
+          example: 88
+        max_hp:
+          type: integer
+          format: int32
+          example: 100
+        level:
+          type: integer
+          format: int32
+          example: 1
+        experience:
+          type: integer
+          format: int32
+          example: 100
+        position:
+          type: string
+          example: "start_room"
+        inventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        combat_stats:
+          type: object
+          properties:
+            attacks:
+              type: integer
+              example: 5
+            damage_dealt:
+              type: integer
+              example: 150
+            damage_taken:
+              type: integer
+              example: 50
+        status_effects:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "中毒"
+              duration:
+                type: integer
+                example: 3
+              description:
+                type: string
+                example: "每回合损失5点生命值"
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "room_001"
+        name:
+          type: string
+          example: "起始房间"
+        description:
+          type: string
+          example: "这是一个温馨的小房间，四周墙壁上挂着几幅古老的画像。"
+        exits:
+          type: object
+          properties:
+            north:
+              type: string
+              example: "north_room"
+            south:
+              type: string
+              example: "start_room"
+            east:
+              type: string
+              example: "storage_room"
+            west:
+              type: string
+              example: "laboratory"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        enemy:
+          $ref: '#/components/schemas/Enemy'
+        is_safe:
+          type: boolean
+          example: true
+        visited:
+          type: boolean
+          example: true
+        coordinates:
+          type: object
+          properties:
+            x:
+              type: integer
+              example: 0
+            y:
+              type: integer
+              example: 0
+            z:
+              type: integer
+              example: 0
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "item_001"
+        name:
+          type: string
+          example: "火把"
+        description:
+          type: string
+          example: "一根燃烧的火把，可以照亮黑暗的地方。"
+        type:
+          type: string
+          enum: [weapon, armor, consumable, quest, key, misc]
+          example: "consumable"
+        rarity:
+          type: string
+          enum: [common, uncommon, rare, epic, legendary]
+          example: "common"
+        value:
+          type: integer
+          example: 10
+        weight:
+          type: number
+          format: float
+          example: 0.5
+        attributes:
+          type: object
+          properties:
+            attack_bonus:
+              type: integer
+              example: 5
+            defense_bonus:
+              type: integer
+              example: 3
+            health_bonus:
+              type: integer
+              example: 20
+            mana_bonus:
+              type: integer
+              example: 10
+        effects:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "heal"
+              value:
+                type: integer
+                example: 20
+              duration:
+                type: integer
+                example: 0
+    Enemy:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "enemy_001"
+        name:
+          type: string
+          example: "哥布林"
+        description:
+          type: string
+          example: "一个绿色的哥布林，手持简陋的武器。"
+        hp:
+          type: integer
+          format: int32
+          example: 50
+        max_hp:
+          type: integer
+          format: int32
+          example: 50
+        attack_power:
+          type: integer
+          example: 15
+        defense:
+          type: integer
+          example: 8
+        level:
+          type: integer
+          format: int32
+          example: 1
+        experience_value:
+          type: integer
+          example: 50
+        loot:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        status_effects:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "眩晕"
+              duration:
+                type: integer
+                example: 2
+        ai_behavior:
+          type: string
+          enum: [aggressive, defensive, passive, random]
+          example: "aggressive"
+        abilities:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "猛击"
+              damage:
+                type: integer
+                example: 25
+              cooldown:
+                type: integer
+                example: 3
+
+    MovementResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "你向北移动，来到了北边的房间。"
+        new_room:
+          $ref: '#/components/schemas/Room'
+        distance_traveled:
+          type: integer
+          example: 1
+      required:
+        - success
+        - message
+
+    CombatResult:
+      type: object
+      properties:
+        player_action:
+          type: string
+          example: "你攻击哥布林，造成了 25 点伤害！"
+        enemy_action:
+          type: string
+          example: "哥布林反击，造成了 12 点伤害！"
+        player_hp:
+          type: integer
+          example: 88
+        enemy_hp:
+          type: integer
+          example: 25
+        combat_state:
+          type: string
+          enum: [ongoing, player_won, enemy_won, fled]
+          example: "ongoing"
+        loot_dropped:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        experience_gained:
+          type: integer
+          example: 50
+        message:
+          type: string
+          example: "战斗继续中..."
+      required:
+        - player_action
+        - combat_state
+
+    CombatStatus:
+      type: object
+      properties:
+        in_combat:
+          type: boolean
+          example: true
+        current_enemy:
+          $ref: '#/components/schemas/Enemy'
+        combat_round:
+          type: integer
+          example: 3
+        player_hp:
+          type: integer
+          example: 88
+        enemy_hp:
+          type: integer
+          example: 25
+        battle_log:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+                example: "2023-01-01T12:00:00Z"
+              action:
+                type: string
+                example: "玩家攻击"
+              target:
+                type: string
+                example: "哥布林"
+              damage:
+                type: integer
+                example: 25
+
+    Command:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "look"
+        description:
+          type: string
+          example: "查看当前房间的详细信息"
+        usage:
+          type: string
+          example: "look"
+        aliases:
+          type: array
+          items:
+            type: string
+          example: ["l", "examine"]
+        parameters:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "direction"
+              type:
+                type: string
+                enum: [string, number, boolean]
+                example: "string"
+              required:
+                type: boolean
+                example: false
+              description:
+                type: string
+                example: "移动方向"
+              example:
+                type: string
+                example: "north"
+        examples:
+          type: array
+          items:
+            type: object
+            properties:
+              command:
+                type: string
+                example: "look"
+              response:
+                type: string
+                example: "起始房间\n这是一个温馨的小房间..."
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "INVALID_PARAMETER"
+        message:
+          type: string
+          example: "无效的移动方向"
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+        request_id:
+          type: string
+          example: "req_123456789"
+
+tags:
+  - name: Player
+    description: 玩家相关操作
+  - name: Room
+    description: 房间相关操作
+  - name: Movement
+    description: 移动相关操作
+  - name: Combat
+    description: 战斗相关操作
+  - name: Item
+    description: 物品相关操作
+  - name: Inventory
+    description: 背包管理
+  - name: Game
+    description: 游戏控制操作
