@@ -35,7 +35,7 @@ jobs:
       # 4. 运行测试
       - name: Run tests
         run: |
-          pytest tests/ -v --maxfail=1 --disable-warnings || echo "No tests found"
+          pytest tests/ -v --maxfail=1 --disable-warnings
 
       # 5. 上传测试报告（已用 v4）
       - name: Upload test report

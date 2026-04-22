@@ -1,14 +1,116 @@
-# Soft Engineering
-软件工程课程
-团队名称：4399
-口号：是兄弟就来4399
-符鹏    9109223063 角色：PO
-张琪    9109223062 角色：SM，DevTeam
+# Soft Engineering - 文字 MUD 游戏
+
+软件工程课程项目（团队：4399）
+
+## 项目简介
+
+本项目是一个基于 Python 的文字 MUD（Multi-User Dungeon）原型，实现了：
+
+- 房间探索与移动（north/south/east/west）
+- 物品拾取与丢弃
+- 敌人战斗与掉落
+- 命令驱动的交互式游戏循环
+
+## 系统架构图（模块关系）
+
+```mermaid
+graph TD
+    A[main.py] --> B[game_engine.py]
+    B --> C[player.py]
+    B --> D[room.py]
+    B --> E[enemy.py]
+    B --> F[command.py]
+    F --> C
+    F --> D
+    F --> E
+```
 
 
 
-## 产品路线图 (PO Roadmap)
-- v1.0 (当前): 基础MUD引擎实现 - ✅ 已完成
-- v1.1: 用户体验优化 - 进行中
-- v1.2: 扩展命令系统 - 规划中
-- v2.0: 图形化界面 - 未来规划
+架构说明：
+
+- `main.py`：程序入口，启动游戏引擎。
+- `game_engine.py`：游戏流程控制、世界初始化、命令分发。
+- `command.py`：命令模式实现，封装 `look/move/get/drop/attack/status/help/quit` 等行为。
+- `player.py`：玩家状态与行为（生命值、背包、攻击）。
+- `room.py`：房间、出口、物品、敌人容器。
+- `enemy.py`：敌人属性与战斗行为。
+
+## 核心业务模块职责说明
+
+- `GameEngine`（`game_engine.py`）
+  - 初始化游戏世界（房间连接、道具、敌人）
+  - 接收并解析玩家输入
+  - 路由到对应命令并维护战斗状态
+- `Command` 体系（`command.py`）
+  - 统一命令接口（`execute/get_name/get_description`）
+  - 各具体命令只关注单一行为，降低分支复杂度
+- `Player`（`player.py`）
+  - 管理玩家生命值、背包、攻击与治疗
+- `Room`（`room.py`）
+  - 维护房间内容（出口、物品、敌人）与安全区属性
+- `Enemy`（`enemy.py`）
+  - 管理敌人战斗属性、反击与掉落条件
+
+## 本地开发环境搭建
+
+### 1. 克隆仓库
+
+```bash
+git clone <你的仓库地址>
+cd Soft-Engineering
+```
+
+### 2. 创建并激活虚拟环境
+
+Windows (PowerShell):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. 安装依赖
+
+```bash
+python -m pip install --upgrade pip
+pip install pytest pytest-cov
+```
+
+> 若后续新增 `requirements.txt`，可执行：`pip install -r requirements.txt`
+
+### 4. 运行单元测试
+
+```bash
+pytest tests/ -v
+```
+
+### 5. 启动游戏
+
+```bash
+python src/main.py
+```
+
+## CI 自动化测试说明
+
+项目已配置 GitHub Actions（`.github/workflows/ci.yml`）：
+
+- PR 或 push 到 `develop/main` 时自动运行
+- 自动安装 Python 与测试依赖
+- 自动执行 `pytest tests/ -v --maxfail=1 --disable-warnings`
+
+## 可维护性审计与重构产出
+
+本次迭代已完成：
+
+- 可维护性五因素自评报告：`docs/maintainability_self_assessment.md`
+- TDD 回归保护：`tests/` 下新增至少 3 个单元测试并纳入 CI
+- 局部重构：抽离命令解析与战斗状态判定逻辑，提升可读性与可修改性
+
