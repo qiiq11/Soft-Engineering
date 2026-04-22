@@ -215,9 +215,10 @@ class StatusCommand(Command):
 
     def execute(self, game_engine) -> bool:
         game_engine.player.show_status()
-        current_room = game_engine.player.current_room
-        if current_room.items:
+        if game_engine.player.inventory:
             print(f"背包中的物品：{', '.join(game_engine.player.inventory)}")
+        else:
+            print("背包中的物品：无")
         return True
 
     def get_name(self) -> str:

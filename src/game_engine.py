@@ -105,22 +105,16 @@ class GameEngine:
                 if not user_input:
                     continue
 
-                # 战斗房间特殊处理
-                if self.current_room.is_combat_room() and not self.in_combat:
-                    print(f"\n⚠️ 你遇到了 {self.current_room.enemy.name}！")
-                    self.in_combat = True
-                    self.combat_round = 0
-                    self.combat_enemy = self.current_room.enemy
+                # 解析命令
+                command_name, self.command_args = self._parse_command(user_input)
 
-                # 在战斗中只能使用 attack 命令
-                if self.in_combat and command_name not in ['attack', 'status', 'quit']:
+                # 战斗房间特殊处理
+                self._try_enter_combat()
+
+                # 在战斗中仅允许部分命令
+                if self._is_command_blocked_in_combat(command_name):
                     print("战斗中只能使用 attack 命令！")
                     continue
-
-                # 解析命令
-                parts = user_input.split()
-                command_name = parts[0].lower()
-                self.command_args = parts[1:]  # 存储命令参数
 
                 # 查找并执行命令
                 command_executed = False
@@ -152,6 +146,24 @@ class GameEngine:
             except Exception as e:
                 print(f"发生错误：{e}")
                 continue
+
+    def _parse_command(self, user_input: str):
+        """解析命令字符串并返回命令名与参数列表。"""
+        parts = user_input.split()
+        command_name = parts[0].lower()
+        return command_name, parts[1:]
+
+    def _try_enter_combat(self):
+        """若当前房间有敌人且尚未进入战斗，则切换到战斗状态。"""
+        if self.current_room.is_combat_room() and not self.in_combat:
+            print(f"\n⚠️ 你遇到了 {self.current_room.enemy.name}！")
+            self.in_combat = True
+            self.combat_round = 0
+            self.combat_enemy = self.current_room.enemy
+
+    def _is_command_blocked_in_combat(self, command_name: str) -> bool:
+        """战斗中只允许攻击、查看状态、退出。"""
+        return self.in_combat and command_name not in ['attack', 'status', 'quit']
 
 
 def main():
