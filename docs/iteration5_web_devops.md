@@ -61,7 +61,7 @@ docker compose up --build api
 
 1. 单元测试（排除集成测试文件单独跑）
 2. REST API 集成测试
-3. Docker build & push `ghcr.io/<repo>/mud-api:latest`（push 到 main/develop 时）
+3. Docker build & push `ghcr.io/<owner>/soft-engineering/mud-api:latest`（路径自动转小写，push 到 main/develop 时）
 4. 前端 `npm run build` 校验
 
 ## 6. 验收自测命令

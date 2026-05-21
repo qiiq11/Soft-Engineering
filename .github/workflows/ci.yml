@@ -8,7 +8,6 @@ on:
 
 env:
   PYTHON_VERSION: '3.12'
-  IMAGE_NAME: ghcr.io/${{ github.repository }}/mud-api
 
 jobs:
   unit-and-integration-test:
@@ -57,14 +56,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # GHCR 要求镜像仓库路径全小写（Soft-Engineering -> soft-engineering）
+      - name: Prepare lowercase image name
+        id: image
+        run: echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/mud-api" >> $GITHUB_OUTPUT
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
 
   frontend-build:
     name: Frontend Build Check
