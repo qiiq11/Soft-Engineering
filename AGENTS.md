@@ -5,15 +5,21 @@
 - 优先保证核心 API（战斗计算、物品交易、命令路由）可测试、可回归。
 
 ## 2) 技术栈与运行方式
-- 语言：Python 3.12+
-- 测试：pytest + pytest-cov
-- 启动：`python src/main.py`
-- 测试：`pytest tests -v`
-- 覆盖率：`pytest tests --cov=src --cov-report=term-missing`
+- 后端：Python 3.12+ / FastAPI / uvicorn
+- 前端：React 18 + Vite + Canvas 2D（`frontend/`）
+- 测试：pytest + httpx（API 集成测试）
+- CLI：`python src/main.py`
+- API：`uvicorn backend.app:app --port 8000`
+- Web：`cd frontend && npm run dev`
+- Docker：`docker compose up --build api`
 
 ## 3) 目录结构与职责
-- `src/main.py`：程序入口。
-- `src/game_engine.py`：游戏状态机、世界初始化、主循环、命令解析。
+- `backend/app.py`：REST API（会话 Header：`X-Session-Id`）。
+- `src/game_service.py`：无控制台输出的业务服务层（API 专用）。
+- `src/world_builder.py`：世界构建（CLI/API 共用）。
+- `src/main.py`：CLI 程序入口。
+- `src/game_engine.py`：游戏状态机、主循环、命令解析。
+- `frontend/`：React Canvas Web UI。
 - `src/command.py`：命令抽象与具体命令（look/move/get/drop/attack/status/help/quit）。
 - `src/player.py`：玩家状态与行为（HP、背包、攻击计算）。
 - `src/enemy.py`：敌人属性、受伤、反击、掉落判定。
