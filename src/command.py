@@ -53,6 +53,8 @@ class MoveCommand(Command):
 
         if next_room:
             game_engine.player.current_room = next_room
+            if hasattr(game_engine, "current_room"):
+                game_engine.current_room = next_room
             print(f"你向{direction}移动，来到了{next_room.name}。")
         else:
             print(f"无法向{direction}移动，那个方向没有出口。")

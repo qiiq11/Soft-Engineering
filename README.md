@@ -86,25 +86,53 @@ pip install pytest pytest-cov
 
 > 若后续新增 `requirements.txt`，可执行：`pip install -r requirements.txt`
 
-### 4. 运行单元测试
+### 4. 运行测试
 
 ```bash
+pip install -r requirements.txt
 pytest tests/ -v
+pytest tests/test_api_integration.py -v
 ```
 
-### 5. 启动游戏
+### 5. 启动 CLI 游戏
 
 ```bash
 python src/main.py
 ```
 
+## 迭代 5：Web + API + Docker
+
+### 启动 REST API
+
+```bash
+uvicorn backend.app:app --reload --port 8000
+```
+
+### 启动 Web 前端（React + Canvas）
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+访问 http://localhost:5173
+
+### Docker
+
+```bash
+docker compose up --build api
+```
+
+详细说明见 `docs/iteration5_web_devops.md`。
+
 ## CI 自动化测试说明
 
 项目已配置 GitHub Actions（`.github/workflows/ci.yml`）：
 
-- PR 或 push 到 `develop/main` 时自动运行
-- 自动安装 Python 与测试依赖
-- 自动执行 `pytest tests/ -v --maxfail=1 --disable-warnings`
+- 单元测试 + REST API 集成测试
+- Docker 镜像构建并推送到 GHCR（`ghcr.io/<仓库>/mud-api`）
+- 前端 `npm run build` 校验
 
 ## 可维护性审计与重构产出
 
